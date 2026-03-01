@@ -3,7 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
-# Dictionnaire global pour stocker l'historique par session
+# Global dict
 store = {}
 
 def get_session_history(session_id: str):
@@ -14,7 +14,7 @@ def get_session_history(session_id: str):
 def get_learning_tools(api_key):
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
     
-    # Prompt avec historique : On ajoute MessagesPlaceholder pour la mémoire
+    # MessagesPlaceholder for the Memory
     prompt = ChatPromptTemplate.from_messages([
         ("system", (
             "You are 'ParaMaster', an expert AI agent in programming paradigms (Imperative, OOP, Functional, Logical). "
@@ -31,7 +31,7 @@ def get_learning_tools(api_key):
     
     chain = prompt | llm
 
-    # On enveloppe la chaîne avec la gestion d'historique
+    # We wrap the chain with history management
     with_history = RunnableWithMessageHistory(
         chain,
         get_session_history,
