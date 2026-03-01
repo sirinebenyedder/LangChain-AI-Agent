@@ -2,15 +2,13 @@ import gradio as gr
 from tools.pedagogy import get_learning_tools
 
 def launch_app(api_key):
-    # On récupère maintenant une seule fonction de chat
     chat_fn = get_learning_tools(api_key)
 
-    # Fonction wrapper pour adapter Gradio Chat à LangChain
+    #Wrapper fonction
     def respond(message, history):
-        # La mémoire est gérée par LangChain en interne via session_id
         return chat_fn(message)
 
-    # Interface de Chat simplifiée
+    # Chat UI
     demo = gr.ChatInterface(
         fn=respond,
         title="🤖 ParaMaster: Paradigms Expert",
