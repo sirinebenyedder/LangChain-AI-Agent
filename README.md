@@ -14,8 +14,9 @@ To showcase a clean, functional implementation of a **JSONAgent** that manages:
 * **Interface**: Gradio
 * **Logic**: Custom Python tools for Paradigm tutoring (OOP, Functional, etc.)
 ## ✨ Example Test Cases
-<img width="959" height="413" alt="Langchain1" src="https://github.com/user-attachments/assets/803be819-1166-4cab-8a36-ab2bc5f3e4ea" />
 <img width="959" height="414" alt="Lanchain2" src="https://github.com/user-attachments/assets/ee625f5a-5744-4760-bee5-eba74e091b97" />
+<img width="959" height="413" alt="Langchain1" src="https://github.com/user-attachments/assets/803be819-1166-4cab-8a36-ab2bc5f3e4ea" />
+
 
 
 ## 🚀 Quick Launch
