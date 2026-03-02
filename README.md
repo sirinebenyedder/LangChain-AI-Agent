@@ -1,7 +1,3 @@
-🎓 ParaMaster: AI Agent Core Demo
-
-This is an **entry-level pedagogical project** designed to demonstrate the core mechanics of an AI Agent within the **LangChain** framework. It focuses on the subject of **Programming Paradigms**.
-
 ## 🎯 Project Goal
 To showcase a clean, functional implementation of a **JSONAgent** that manages:
 * **Orchestration**: Using LangChain to bridge the Gemini model with specific tools.
