@@ -1,47 +1,84 @@
+import os
+from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain import hub
+from langchain_core.tools import tool
+from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
-# Global dict
-store = {}
+load_dotenv()
 
-def get_session_history(session_id: str):
-    if session_id not in store:
-        store[session_id] = InMemoryChatMessageHistory()
-    return store[session_id]
+# ── Tool 1: REAL web search via Tavily ───────────────────────────────────────
+web_search = TavilySearchResults(
+    max_results=3,          # fetch top 3 results
+    description=(
+        "Rechercher sur internet des informations sur les paradigmes de programmation, "
+        "les concepts informatiques, ou toute question technique."
+    )
+)
 
-def get_learning_tools(api_key):
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
-    
-    # MessagesPlaceholder for the Memory
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", (
-            "You are 'ParaMaster', an expert AI agent in programming paradigms (Imperative, OOP, Functional, Logical). "
-            "IMPORTANT: Always respond in the SAME language used by the student. "
-            "If the student speaks French, respond in French. If they speak English, respond in English. "
-            "Your mission: "
-            "- Help students master programming paradigms with clear explanations. "
-            "- When generating exercises, specify the target paradigm. "
-            "- When reviewing code, strictly check if it follows the requested paradigm's rules."
-        )),
-        MessagesPlaceholder(variable_name="history"),
-        ("human", "{input}"),
-    ])
-    
-    chain = prompt | llm
+# ── Tool 2: Local docs (keep it but make it honest) ──────────────────────────
+@tool
+def search_local_docs(query: str) -> str:
+    """Chercher dans la documentation locale du cours. Utile pour les consignes spécifiques du Master."""
+    # Replace this with real file reading later (e.g. load from PDF/txt)
+    local_knowledge = {
+        "orienté objet": "Le cours Master insiste sur: encapsulation, héritage, polymorphisme. Voir chapitre 3.",
+        "fonctionnel": "Le cours Master insiste sur: fonctions pures, immutabilité, récursion. Voir chapitre 5.",
+        "impératif": "Le cours Master insiste sur: séquences d'instructions, états mutables. Voir chapitre 1.",
+    }
+    for key, value in local_knowledge.items():
+        if key in query.lower():
+            return value
+    return "Aucune documentation locale trouvée pour ce sujet. Essayez une recherche web."
 
-    # We wrap the chain with history management
-    with_history = RunnableWithMessageHistory(
-        chain,
+
+# ── Session memory ────────────────────────────────────────────────────────────
+session_store: dict = {}
+
+def get_session_history(session_id: str) -> ChatMessageHistory:
+    if session_id not in session_store:
+        session_store[session_id] = ChatMessageHistory()
+    return session_store[session_id]
+
+
+# ── Main factory ──────────────────────────────────────────────────────────────
+def get_learning_tools(api_key: str):
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash-lite",
+        google_api_key=api_key,
+        temperature=0,   # deterministic = more reliable ReAct parsing
+    )
+
+    prompt = hub.pull("hwchase17/react")
+
+    # ✅ Now the agent has 2 real tools to choose from
+    tools = [web_search, search_local_docs]
+
+    agent = create_react_agent(llm, tools, prompt)
+
+    agent_executor = AgentExecutor(
+        agent=agent,
+        tools=tools,
+        verbose=True,
+        handle_parsing_errors=True,
+        max_iterations=6,
+    )
+
+    agent_with_history = RunnableWithMessageHistory(
+        agent_executor,
         get_session_history,
         input_messages_key="input",
-        history_messages_key="history",
+        history_messages_key="chat_history",
     )
-    
-    def chat_with_alfred(user_message, session_id="default"):
-        config = {"configurable": {"session_id": session_id}}
-        response = with_history.invoke({"input": user_message}, config=config)
-        return response.content
-        
+
+    def chat_with_alfred(user_message: str, session_id: str = "default") -> str:
+        response = agent_with_history.invoke(
+            {"input": user_message},
+            config={"configurable": {"session_id": session_id}},
+        )
+        return response["output"]
+
     return chat_with_alfred

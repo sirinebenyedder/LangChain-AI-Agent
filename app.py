@@ -18,7 +18,7 @@ def launch_app(api_key):
             "Generate an OOP exercise about inheritance in Python."],
          #["Explique-moi le concept d'immutabilité en programmation fonctionnelle.",
         #  "Génère un exercice de POO sur l'héritage en Python."],
-        theme="soft"
+        #theme="soft"
     )
 
     demo.launch(share=True, debug=True)
